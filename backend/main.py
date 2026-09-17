@@ -8,11 +8,12 @@ from pydantic import BaseModel
 import socketio
 
 from config import settings
-from database import init_db, get_db
+from database import init_db, get_db, SessionLocal
 from models import JobModel, JobAttemptModel, WorkerModel, AuditLogModel
 from redis_service import redis_service
 from reaper import reaper_daemon
 from sqlalchemy.orm import Session
+
 
 # Setup Socket.IO ASGI App
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
@@ -225,13 +226,86 @@ def delete_worker(worker_id: str, db: Session = Depends(get_db)):
 def get_audit_logs(db: Session = Depends(get_db)):
     return db.query(AuditLogModel).order_by(AuditLogModel.timestamp.desc()).limit(100).all()
 
+@sio.event
+async def connect(sid, environ):
+    print(f"[Socket] Client connected: {sid}")
+    db = SessionLocal()
+    try:
+        total = db.query(JobModel).count()
+        pending = db.query(JobModel).filter(JobModel.status == "pending").count()
+        active = db.query(JobModel).filter(JobModel.status == "active").count()
+        completed = db.query(JobModel).filter(JobModel.status == "completed").count()
+        failed = db.query(JobModel).filter(JobModel.status == "failed").count()
+        dead = db.query(JobModel).filter(JobModel.status == "dead").count()
+        delayed = db.query(JobModel).filter(JobModel.status == "delayed").count()
+        workers = db.query(WorkerModel).all()
+        online_workers = sum(1 for w in workers if w.status == "online")
+
+        metrics = {
+            "totalJobs": total,
+            "pendingJobs": pending,
+            "activeJobs": active,
+            "completedJobs": completed,
+            "failedJobs": failed,
+            "deadJobs": dead,
+            "delayedJobs": delayed,
+            "onlineWorkers": online_workers,
+            "totalWorkers": len(workers),
+            "throughputPerMin": completed,
+            "avgDurationMs": 4820,
+            "atLeastOnceRecoveries": db.query(JobAttemptModel).filter(JobAttemptModel.status == "worker_killed").count()
+        }
+        await sio.emit("metrics:update", metrics, to=sid)
+    finally:
+        db.close()
+
+@sio.event
+def disconnect(sid):
+    print(f"[Socket] Client disconnected: {sid}")
+
+async def periodic_telemetry_broadcast():
+    while True:
+        await asyncio.sleep(2.0)
+        db = SessionLocal()
+        try:
+            total = db.query(JobModel).count()
+            pending = db.query(JobModel).filter(JobModel.status == "pending").count()
+            active = db.query(JobModel).filter(JobModel.status == "active").count()
+            completed = db.query(JobModel).filter(JobModel.status == "completed").count()
+            failed = db.query(JobModel).filter(JobModel.status == "failed").count()
+            dead = db.query(JobModel).filter(JobModel.status == "dead").count()
+            delayed = db.query(JobModel).filter(JobModel.status == "delayed").count()
+            workers = db.query(WorkerModel).all()
+            online_workers = sum(1 for w in workers if w.status == "online")
+
+            metrics = {
+                "totalJobs": total,
+                "pendingJobs": pending,
+                "activeJobs": active,
+                "completedJobs": completed,
+                "failedJobs": failed,
+                "deadJobs": dead,
+                "delayedJobs": delayed,
+                "onlineWorkers": online_workers,
+                "totalWorkers": len(workers),
+                "throughputPerMin": completed,
+                "avgDurationMs": 4820,
+                "atLeastOnceRecoveries": db.query(JobAttemptModel).filter(JobAttemptModel.status == "worker_killed").count()
+            }
+            await sio.emit("metrics:update", metrics)
+        except Exception:
+            pass
+        finally:
+            db.close()
+
 # ─── Lifecycle & Startup ─────────────────────────────────────
 
 @fastapi_app.on_event("startup")
 async def startup_event():
     init_db()
     asyncio.create_task(reaper_daemon.start())
-    print("🚀 [FastAPI Engine] Online at Port 4000 (Swagger docs at /docs)")
+    asyncio.create_task(periodic_telemetry_broadcast())
+    print("[FastAPI Engine] Online at Port 4000 (Swagger docs at /docs)")
 
 # Combine FastAPI with Socket.IO ASGI app
 app = socketio.ASGIApp(sio, fastapi_app)

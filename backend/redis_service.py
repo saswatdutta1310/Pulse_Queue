@@ -1,5 +1,6 @@
 import redis
 import json
+import time
 import uuid
 from typing import Dict, Any, Optional
 from config import settings
@@ -25,13 +26,14 @@ class RedisQueueService:
         queue_key = "bull:pulse-queue:wait"
         job_data_key = f"bull:pulse-queue:{job_id}"
 
+        now_ms = int(time.time() * 1000)
         job_doc = {
             "name": job_type,
             "data": json.dumps(payload),
             "opts": json.dumps({"attempts": 3, "priority": priority, "delay": delay_ms}),
             "progress": "0",
             "delay": str(delay_ms),
-            "timestamp": str(int(redis.time()[0] * 1000)),
+            "timestamp": str(now_ms),
             "attemptsMade": "0",
             "stacktrace": "[]"
         }
@@ -40,10 +42,11 @@ class RedisQueueService:
 
         if delay_ms > 0:
             delayed_key = "bull:pulse-queue:delayed"
-            score = (redis.time()[0] * 1000) + delay_ms
+            score = now_ms + delay_ms
             self.client.zadd(delayed_key, {job_id: score})
         else:
             self.client.lpush(queue_key, job_id)
+
 
     def bump_lease_epoch(self, job_id: str) -> int:
         """
