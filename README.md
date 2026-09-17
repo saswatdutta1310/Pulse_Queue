@@ -94,26 +94,17 @@ Modern microservice architectures process millions of background workloads (fina
 
 - **Backend:** Node.js 18+, TypeScript, Express, BullMQ, Redis, Socket.IO, JWT
 - **Frontend:** React 18, Vite, TailwindCSS, Recharts, Lucide Icons
-- **Infrastructure:** Docker, Docker Compose, Redis 7 (AOF persistence)
+- **Data & Caching:** Redis 7 (with AOF persistence)
 
 ---
 
 ## ⚡ Quick Start
 
-### Option 1: Using Docker Compose (Recommended)
-```bash
-docker compose up --build
-```
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:4000`
-- Health Probe: `http://localhost:4000/health/liveness`
-
-### Option 2: Local Development
-
-#### 1. Start Redis Server
+### 1. Start Redis Server
 ```powershell
 redis-server
 ```
+
 
 #### 2. Start Backend & Worker Fleet
 ```powershell
