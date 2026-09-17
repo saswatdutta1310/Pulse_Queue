@@ -49,6 +49,14 @@ export const SubmitJobModal: React.FC<SubmitJobModalProps> = ({ isOpen, onClose,
           sleepMs: 100
         }, null, 2));
         break;
+      case 'webhook_dispatch':
+        setCustomPayload(JSON.stringify({
+          taskName: "Order Confirmation Webhook",
+          targetUrl: "https://api.example.com/webhooks/order",
+          itemsCount: 1,
+          sleepMs: 80
+        }, null, 2));
+        break;
       case 'fault_simulation':
         setCustomPayload(JSON.stringify({
           taskName: "Payment Gateway Integration",
@@ -137,11 +145,12 @@ export const SubmitJobModal: React.FC<SubmitJobModalProps> = ({ isOpen, onClose,
             <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2">
               Select Job Handler
             </label>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
               {[
                 { type: 'data_sync', label: 'Data Sync', icon: Database, desc: 'Batch ETL' },
                 { type: 'report_export', label: 'Report Export', icon: FileSpreadsheet, desc: 'CSV & PDF' },
                 { type: 'heavy_computation', label: 'CPU Compute', icon: Cpu, desc: 'Prime Sieve' },
+                { type: 'webhook_dispatch', label: 'Webhook', icon: RefreshCw, desc: 'HTTP POST' },
                 { type: 'fault_simulation', label: 'Fault Simulation', icon: AlertTriangle, desc: 'Retry / DLQ' }
               ].map((item) => {
                 const Icon = item.icon;

@@ -1,23 +1,28 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Zap, 
-  ShieldCheck, 
-  Cpu, 
-  Activity, 
-  Layers, 
-  Terminal, 
-  ArrowRight, 
-  Play, 
-  AlertTriangle, 
-  CheckCircle2, 
+import {
+  Zap,
+  ShieldCheck,
+  Cpu,
+  Activity,
+  Terminal,
+  ArrowRight,
+  Play,
+  AlertTriangle,
+  CheckCircle2,
   RefreshCw,
   Server,
   Lock,
   GitPullRequest
 } from 'lucide-react';
+import { WeEvolveHero } from '../components/hero/WeEvolveHero.js';
+import { GlowCard } from '../components/ui/GlowCard.js';
+import { useMagneticRipple } from '../hooks/useMagneticRipple.js';
+import { JobLifecycleSection } from '../components/landing/JobLifecycleSection.js';
+import { TaglineMarquee } from '../components/landing/TaglineMarquee.js';
 
 export const LandingPage: React.FC = () => {
+  const bottomCta = useMagneticRipple<HTMLAnchorElement>();
   // Interactive Chaos Simulation State on the Landing Page
   const [simState, setSimState] = useState<'idle' | 'running' | 'crashed' | 'recovering' | 'recovered'>('idle');
   const [simProgress, setSimProgress] = useState(0);
@@ -54,58 +59,9 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="space-y-24 pb-20">
-      {/* ─── Hero Section ────────────────────────────────────────── */}
-      <section className="relative pt-12 lg:pt-20 text-center max-w-4xl mx-auto space-y-6">
-        {/* Glow behind hero */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <WeEvolveHero />
 
-        {/* Live Cluster Pill */}
-        <div className="inline-flex items-center space-x-2 rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3.5 py-1 text-xs font-mono text-cyan-400 backdrop-blur-md shadow-sm">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 pulse-online" />
-          <span>AUTONOMOUS DISTRIBUTED ENGINE • READY</span>
-        </div>
-
-        {/* Headline */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-          Zero-Loss Distributed Tasks. <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500">
-            Autonomous Failover & Telemetry.
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto font-sans leading-relaxed">
-          Engineered for mission-critical enterprise workflows. Built with distributed Redis leases, 
-          a sub-6-second Heartbeat Reaper, dead-letter queue containment, and sub-100ms WebSocket telemetry.
-        </p>
-
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <Link
-            to="/dashboard"
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl bg-cyan-500 px-6 py-3.5 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/25 hover:bg-cyan-400 active:scale-95 transition-all"
-          >
-            <span>Launch Live Control Plane</span>
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <a
-            href="#architecture"
-            className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 rounded-xl border border-ops-border bg-ops-panel px-6 py-3.5 text-sm font-semibold text-slate-200 hover:bg-slate-800 hover:border-slate-600 transition-all"
-          >
-            <Layers className="h-4 w-4 text-cyan-400" />
-            <span>Explore Architecture</span>
-          </a>
-        </div>
-
-        {/* Tech Stack Chips */}
-        <div className="pt-6 flex flex-wrap items-center justify-center gap-2 text-[11px] font-mono text-slate-400">
-          <span className="rounded-md border border-ops-border bg-ops-panel/60 px-2.5 py-1">Node.js / TS</span>
-          <span className="rounded-md border border-ops-border bg-ops-panel/60 px-2.5 py-1">Redis & BullMQ</span>
-          <span className="rounded-md border border-ops-border bg-ops-panel/60 px-2.5 py-1">WebSocket Sync</span>
-          <span className="rounded-md border border-ops-border bg-ops-panel/60 px-2.5 py-1">At-Least-Once Semantics</span>
-          <span className="rounded-md border border-ops-border bg-ops-panel/60 px-2.5 py-1">Google OAuth + RBAC</span>
-        </div>
-      </section>
+      <JobLifecycleSection />
 
       {/* ─── Interactive Failover Sandbox ───────────────────────── */}
       <section className="max-w-4xl mx-auto">
@@ -228,7 +184,7 @@ export const LandingPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Card 1 */}
-          <div className="p-6 rounded-2xl border border-ops-border bg-ops-panel hover:border-cyan-500/40 transition-all space-y-3">
+          <GlowCard className="p-6 space-y-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <Zap className="h-5 w-5" />
             </div>
@@ -236,10 +192,10 @@ export const LandingPage: React.FC = () => {
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
               Tasks are checked out with a temporary TTL lease renewed every 2 seconds. No permanent locks—if a node dies, the lock expires automatically.
             </p>
-          </div>
+          </GlowCard>
 
           {/* Card 2 */}
-          <div className="p-6 rounded-2xl border border-ops-border bg-ops-panel hover:border-cyan-500/40 transition-all space-y-3">
+          <GlowCard className="p-6 space-y-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <ShieldCheck className="h-5 w-5" />
             </div>
@@ -247,10 +203,10 @@ export const LandingPage: React.FC = () => {
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
               Autonomous background monitor checks all nodes every 2.5s. Workers missing 3 heartbeats (&gt;5.5s) are revoked, and tasks are re-queued immediately.
             </p>
-          </div>
+          </GlowCard>
 
           {/* Card 3 */}
-          <div className="p-6 rounded-2xl border border-ops-border bg-ops-panel hover:border-cyan-500/40 transition-all space-y-3">
+          <GlowCard className="p-6 space-y-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
               <AlertTriangle className="h-5 w-5" />
             </div>
@@ -258,21 +214,21 @@ export const LandingPage: React.FC = () => {
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
               Poison pill jobs are isolated into the Dead-Letter Queue after 3 failed retries. The main queue never starves, and operators can replay jobs with 1 click.
             </p>
-          </div>
+          </GlowCard>
 
           {/* Card 4 */}
-          <div className="p-6 rounded-2xl border border-ops-border bg-ops-panel hover:border-cyan-500/40 transition-all space-y-3">
+          <GlowCard className="p-6 space-y-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
               <Activity className="h-5 w-5" />
             </div>
             <h3 className="text-base font-bold text-white">WebSocket Telemetry Push</h3>
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
-              Zero-polling event streaming. Worker memory consumption, queue latency, active progress, and audit trails stream to the UI in sub-100ms.
+              Zero-polling event streaming. Worker memory consumption, queue latency, active progress, and audit trails stream to the UI in real time.
             </p>
-          </div>
+          </GlowCard>
 
           {/* Card 5 */}
-          <div className="p-6 rounded-2xl border border-ops-border bg-ops-panel hover:border-cyan-500/40 transition-all space-y-3">
+          <GlowCard className="p-6 space-y-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Server className="h-5 w-5" />
             </div>
@@ -280,10 +236,10 @@ export const LandingPage: React.FC = () => {
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
               Built-in process manager dynamically spawns or terminates real OS processes. Evaluators can trigger chaos kill tests directly from the dashboard.
             </p>
-          </div>
+          </GlowCard>
 
           {/* Card 6 */}
-          <div className="p-6 rounded-2xl border border-ops-border bg-ops-panel hover:border-cyan-500/40 transition-all space-y-3">
+          <GlowCard className="p-6 space-y-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
               <Lock className="h-5 w-5" />
             </div>
@@ -291,9 +247,11 @@ export const LandingPage: React.FC = () => {
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
               Authenticated access via Google Identity and stateless JWTs. Admin users can execute actions; Viewers have read-only telemetry access.
             </p>
-          </div>
+          </GlowCard>
         </div>
       </section>
+
+      <TaglineMarquee />
 
       {/* ─── Bottom CTA ─────────────────────────────────────────── */}
       <section className="text-center pt-8 border-t border-ops-border max-w-2xl mx-auto space-y-4">
@@ -302,9 +260,17 @@ export const LandingPage: React.FC = () => {
           Access the real-time telemetry dashboard, worker fleet, and live audit trail.
         </p>
         <Link
+          ref={bottomCta.ref}
           to="/dashboard"
-          className="inline-flex items-center space-x-2 rounded-xl bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-400 active:scale-95 transition-all"
+          onMouseMove={bottomCta.onMouseMove}
+          onMouseLeave={bottomCta.onMouseLeave}
+          onClick={bottomCta.onClick}
+          style={bottomCta.style}
+          className="relative inline-flex items-center space-x-2 overflow-hidden rounded-full bg-carbon-accent px-6 py-3 text-sm font-semibold text-white shadow-[0_0_25px_var(--carbon-accent-glow)] transition-transform"
         >
+          {bottomCta.ripples.map((r) => (
+            <span key={r.id} className="cta-ripple" style={{ left: r.x, top: r.y }} />
+          ))}
           <span>Open Control Plane</span>
           <ArrowRight className="h-4 w-4" />
         </Link>

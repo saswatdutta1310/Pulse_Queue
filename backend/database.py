@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from models import Base
 from config import settings
@@ -19,14 +19,23 @@ try:
 except Exception as e:
     print(f"[Database] PostgreSQL connection failed ({e.__class__.__name__}). Falling back to durable local SQLite: sqlite:///pulsequeue.db")
     DB_URI = "sqlite:///pulsequeue.db"
-    engine = create_engine(DB_URI, connect_args={"check_same_thread": False})
+    # Multiple worker OS processes + the API process all hit this same SQLite file
+    # concurrently, so use WAL mode + a busy timeout to avoid "database is locked" errors.
+    engine = create_engine(DB_URI, connect_args={"check_same_thread": False, "timeout": 30})
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
 
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
     Base.metadata.create_all(bind=engine)
-    print("🐘 [Database] Schemas and tables verified/created.")
+    print("[Database] Schemas and tables verified/created.")
 
 def get_db():
     db = SessionLocal()

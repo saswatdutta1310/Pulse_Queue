@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, Server, Layers, AlertOctagon, CheckCircle2, 
-  RefreshCw, ShieldAlert, Zap, ArrowUpRight, Skull, Terminal, Play
+  RefreshCw, ShieldAlert, Zap, ArrowUpRight, Skull, Terminal, Play, RotateCcw
 } from 'lucide-react';
 import { 
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid 
@@ -39,31 +39,45 @@ export const Dashboard: React.FC<{ onOpenSubmit: () => void }> = ({ onOpenSubmit
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [chartData, setChartData] = useState<Array<{ time: string; active: number; pending: number; throughput: number }>>([]);
   const [chaosLoading, setChaosLoading] = useState(false);
+  const [reseedLoading, setReseedLoading] = useState(false);
 
-  // Initial fetch
+  const fetchData = async () => {
+    try {
+      const [m, w, j] = await Promise.all([
+        api.getMetrics(),
+        api.getWorkers(),
+        api.getJobs()
+      ]);
+      setMetrics(m);
+      setWorkers(w);
+      setRecentJobs(j.slice(0, 7));
+
+      // Initial chart point
+      const timeStr = new Date().toLocaleTimeString();
+      setChartData([
+        { time: timeStr, active: m.activeJobs, pending: m.pendingJobs, throughput: m.throughputPerMin }
+      ]);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [m, w, j] = await Promise.all([
-          api.getMetrics(),
-          api.getWorkers(),
-          api.getJobs()
-        ]);
-        setMetrics(m);
-        setWorkers(w);
-        setRecentJobs(j.slice(0, 7));
-
-        // Initial chart point
-        const timeStr = new Date().toLocaleTimeString();
-        setChartData([
-          { time: timeStr, active: m.activeJobs, pending: m.pendingJobs, throughput: m.throughputPerMin }
-        ]);
-      } catch (err) {
-        console.error('Error fetching initial dashboard data:', err);
-      }
-    };
     fetchData();
   }, []);
+
+  const handleResetAndSeed = async () => {
+    setReseedLoading(true);
+    try {
+      await api.resetAndSeed();
+      await fetchData();
+    } catch (err: any) {
+      console.error('Failed to reset and seed:', err);
+      alert(err.message || 'Failed to reset and seed database');
+    } finally {
+      setReseedLoading(false);
+    }
+  };
 
   // Socket live subscription
   useEffect(() => {
@@ -125,18 +139,18 @@ export const Dashboard: React.FC<{ onOpenSubmit: () => void }> = ({ onOpenSubmit
       await api.createBatchJobs(10, 'data_sync');
       
       // 2. Wait 1.5s until jobs are actively claimed
-      setTimeout(async () => {
-        const currentWorkers = await api.getWorkers();
-        const activeWorker = currentWorkers.find(w => w.status === 'online' && w.current_job_id);
-        const victim = activeWorker || currentWorkers.find(w => w.status === 'online');
-        
-        if (victim) {
-          await api.killWorker(victim.id);
-        }
-        setChaosLoading(false);
-      }, 1500);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const currentWorkers = await api.getWorkers();
+      const activeWorker = currentWorkers.find(w => w.status === 'online' && w.current_job_id);
+      const victim = activeWorker || currentWorkers.find(w => w.status === 'online');
+      
+      if (victim) {
+        await api.killWorker(victim.id);
+      }
     } catch (err: any) {
       console.error('Chaos demo error:', err);
+    } finally {
       setChaosLoading(false);
     }
   };
@@ -157,6 +171,16 @@ export const Dashboard: React.FC<{ onOpenSubmit: () => void }> = ({ onOpenSubmit
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-3">
+          <button
+            onClick={handleResetAndSeed}
+            disabled={reseedLoading}
+            title="Purge all tables and Redis queues, then generate fresh demo workloads"
+            className="flex items-center space-x-2 rounded-md border border-cyan-500/40 bg-cyan-950/40 px-3.5 py-2 text-xs font-bold text-cyan-300 hover:bg-cyan-900/60 active:scale-95 transition-all shadow-sm"
+          >
+            <RotateCcw className={`h-3.5 w-3.5 text-cyan-400 ${reseedLoading ? 'animate-spin' : ''}`} />
+            <span>{reseedLoading ? 'Reseeding...' : 'Reset & Seed Data'}</span>
+          </button>
+
           <button
             onClick={handleChaosDemo}
             disabled={chaosLoading}

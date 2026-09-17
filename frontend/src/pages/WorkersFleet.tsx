@@ -4,6 +4,15 @@ import { api } from '../services/api.js';
 import { getSocket } from '../services/socket.js';
 import type { WorkerNode } from '../../../shared/types.js';
 
+const parseUtcDate = (dateStr: string | undefined | null): number => {
+  if (!dateStr) return 0;
+  // If the string lacks timezone specifiers ('Z' or '+/-HH:mm'), append 'Z' so it is parsed as UTC
+  const hasTimezone = dateStr.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateStr);
+  const normalized = hasTimezone ? dateStr : `${dateStr}Z`;
+  const time = new Date(normalized).getTime();
+  return isNaN(time) ? 0 : time;
+};
+
 export const WorkersFleet: React.FC = () => {
   const [workers, setWorkers] = useState<WorkerNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,7 +122,7 @@ export const WorkersFleet: React.FC = () => {
           workers.map((worker) => {
             const isOnline = worker.status === 'online';
             const isKilled = worker.status === 'killed' || worker.status === 'dead';
-            const elapsedMs = Math.max(0, now - new Date(worker.last_heartbeat).getTime());
+            const elapsedMs = Math.max(0, now - parseUtcDate(worker.last_heartbeat));
             const isConfirming = confirmKillId === worker.id;
 
             return (

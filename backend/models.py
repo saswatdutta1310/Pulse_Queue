@@ -1,13 +1,16 @@
 import uuid
-from datetime import datetime
-from typing import Optional, Dict, Any, List
+from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, String, Integer, DateTime, JSON, Text, ForeignKey, create_engine
+    Column, String, Integer, DateTime, JSON, Text, ForeignKey,
 )
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
+
+
+def _utcnow():
+    """Timezone-aware UTC timestamp (replaces deprecated datetime.utcnow())."""
+    return datetime.now(timezone.utc)
 
 class JobModel(Base):
     __tablename__ = "jobs"
@@ -25,8 +28,8 @@ class JobModel(Base):
     worker_id = Column(String(64), nullable=True)
     progress = Column(Integer, default=0)
     result = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     attempts_rel = relationship("JobAttemptModel", back_populates="job", cascade="all, delete-orphan")
 
@@ -39,7 +42,7 @@ class JobAttemptModel(Base):
     worker_id = Column(String(64), nullable=True)
     worker_pid = Column(Integer, nullable=True)
     attempt_number = Column(Integer, nullable=False)
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=_utcnow)
     ended_at = Column(DateTime, nullable=True)
     duration_ms = Column(Integer, nullable=True)
     status = Column(String(50), nullable=False)
@@ -60,8 +63,8 @@ class WorkerModel(Base):
     concurrency = Column(Integer, default=1)
     jobs_processed = Column(Integer, default=0)
     jobs_failed = Column(Integer, default=0)
-    started_at = Column(DateTime, default=datetime.utcnow)
-    last_heartbeat = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=_utcnow)
+    last_heartbeat = Column(DateTime, default=_utcnow)
     current_job_id = Column(String(64), nullable=True)
     current_job_type = Column(String(100), nullable=True)
     current_job_progress = Column(Integer, default=0)
@@ -72,6 +75,6 @@ class AuditLogModel(Base):
     __tablename__ = "audit_logs"
 
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4())[:8])
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=_utcnow)
     action = Column(String(100), nullable=False)
     details = Column(JSON, nullable=True)

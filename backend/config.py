@@ -14,10 +14,16 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "pulsequeue")
     
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        f"postgresql+asyncpg://{os.getenv('POSTGRES_USER', 'postgres')}:{os.getenv('POSTGRES_PASSWORD', 'postgres')}@{os.getenv('POSTGRES_HOST', 'localhost')}:{os.getenv('POSTGRES_PORT', '5432')}/{os.getenv('POSTGRES_DB', 'pulsequeue')}"
-    )
+    # Note: the app uses synchronous SQLAlchemy (psycopg2), not asyncpg, so this
+    # must NOT use the +asyncpg dialect despite the asyncpg package being installed.
+    DATABASE_URL: str = ""
+
+    def model_post_init(self, __context):
+        if not self.DATABASE_URL:
+            self.DATABASE_URL = (
+                f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+                f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+            )
 
     JWT_SECRET: str = os.getenv("JWT_SECRET", "pulsequeue-python-fastapi-jwt-secret-2026")
     REAPER_INTERVAL_MS: int = 2500

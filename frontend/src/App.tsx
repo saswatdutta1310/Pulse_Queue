@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.js';
-import { Navbar } from './components/Navbar.js';
+import { WeEvolveHeader } from './components/nav/WeEvolveHeader.js';
 import { ProtectedRoute } from './components/ProtectedRoute.js';
 import { LandingPage } from './pages/LandingPage.js';
 import { LoginPage } from './pages/LoginPage.js';
@@ -18,10 +18,10 @@ export const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col font-sans">
-          <Navbar onOpenSubmitModal={() => setIsSubmitOpen(true)} />
-          
-          <main className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 pt-6">
+        <div className="min-h-screen bg-carbon-bg text-slate-100 flex flex-col font-sans">
+          <WeEvolveHeader onOpenSubmitModal={() => setIsSubmitOpen(true)} />
+
+          <main className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 pt-28 md:pt-32">
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />

@@ -1,4 +1,4 @@
-export type JobStatus = 'pending' | 'active' | 'completed' | 'failed' | 'dead' | 'delayed';
+export type JobStatus = 'pending' | 'active' | 'completed' | 'failed' | 'dead' | 'delayed' | 'cancelled';
 
 export type WorkerStatus = 'online' | 'degraded' | 'dead' | 'killed';
 

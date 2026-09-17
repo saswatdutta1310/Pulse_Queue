@@ -14,7 +14,7 @@ export const JobDetail: React.FC = () => {
   const [attempts, setAttempts] = useState<JobAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const fetchJobData = async () => {
     if (!id) return;
@@ -48,10 +48,10 @@ export const JobDetail: React.FC = () => {
     }
   };
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, attemptId: string) => {
     navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopied(attemptId);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   if (loading) {
@@ -219,11 +219,11 @@ export const JobDetail: React.FC = () => {
                         <span>{attempt.error_code || 'EXECUTION_FAILURE'}</span>
                       </span>
                       <button
-                        onClick={() => copyToClipboard(attempt.stack_trace || '')}
+                        onClick={() => copyToClipboard(attempt.stack_trace || '', attempt.id)}
                         className="text-slate-400 hover:text-white flex items-center space-x-1 text-[10px]"
                       >
-                        {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                        <span>{copied ? 'Copied' : 'Copy Trace'}</span>
+                        {copied === attempt.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                        <span>{copied === attempt.id ? 'Copied' : 'Copy Trace'}</span>
                       </button>
                     </div>
 

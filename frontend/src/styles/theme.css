@@ -1,0 +1,101 @@
+/*
+  WeEvolveIT-inspired "cyber-editorial" design tokens.
+  Lives alongside the existing `ops.*` Tailwind palette (used by the current
+  dashboard pages) rather than replacing it outright — pages migrate to this
+  system one at a time (see the re-skin pass) instead of in one big-bang swap.
+*/
+
+:root {
+  --carbon-bg: #0f0f11;
+  --carbon-card-bg: #1c1c1c;
+  --carbon-surface-glass: rgba(18, 18, 18, 0.8);
+  --carbon-accent: #e4007c;
+  --carbon-accent-glow: rgba(228, 0, 124, 0.35);
+  --carbon-border-subtle: rgba(255, 255, 255, 0.1);
+  --carbon-text-primary: #f5f5f5;
+  --carbon-text-muted: #9a9a9a;
+}
+
+/* Uppercase, tracked-out monospace treatment for eyebrows/labels/telemetry text */
+.label-mono {
+  font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Sequential "queue heartbeat" dot-wave used by the header logo mark */
+@keyframes dotWave {
+  0%, 60%, 100% {
+    transform: scale(0.55);
+    opacity: 0.35;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.dot-wave {
+  animation: dotWave 1.8s ease-in-out infinite;
+}
+
+/* Infinite horizontal marquee — track holds two copies of its content
+   back-to-back, translated by exactly -50% so the loop is seamless. */
+@keyframes marqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marqueeScroll 28s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* Candle-glow card hover: a cursor-tracking radial spotlight, positioned via
+   --x/--y custom properties set on mousemove (see GlowCard.tsx). Defaults to
+   center so it doesn't look broken before the first mousemove event. */
+.glow-card-spotlight {
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), var(--carbon-accent-glow), transparent 60%);
+}
+
+/* Click ripple for primary CTAs (see useMagneticRipple.ts) */
+@keyframes rippleExpand {
+  to {
+    transform: translate(-50%, -50%) scale(22);
+    opacity: 0;
+  }
+}
+
+.cta-ripple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.55);
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  animation: rippleExpand 650ms ease-out forwards;
+}
+
+/* Slower variant of the marquee loop, for the large repeated-tagline belt */
+.marquee-track-slow {
+  animation-duration: 42s;
+}
+
+/* Dimmed/outlined display text for the tagline belt: transparent fill with
+   a faint stroke. `color` is the fallback for browsers without
+   -webkit-text-stroke support (rare today, but keeps it non-invisible). */
+.outline-text {
+  color: rgba(255, 255, 255, 0.05);
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.18);
+  -webkit-text-fill-color: transparent;
+}

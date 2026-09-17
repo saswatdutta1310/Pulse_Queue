@@ -74,6 +74,19 @@ export const AuditLogs: React.FC = () => {
                 logs.map((log) => {
                   const isReassigned = log.action === 'JOB_AUTO_REASSIGNED';
                   const isManual = log.action === 'JOB_MANUAL_RETRY';
+                  const isDanger = log.action === 'JOB_DEAD_LETTERED' || log.action === 'WORKER_KILLED';
+                  const isSuccess = log.action === 'WORKER_SPAWNED';
+                  const isEnqueue = log.action === 'JOB_ENQUEUED' || log.action === 'JOB_BATCH_ENQUEUED';
+
+                  const badgeStyle = isDanger
+                    ? 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+                    : isReassigned
+                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                    : isManual || isEnqueue
+                    ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                    : isSuccess
+                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                    : 'bg-slate-800 text-slate-300 border-slate-700';
 
                   return (
                     <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
@@ -82,13 +95,7 @@ export const AuditLogs: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
-                          isReassigned 
-                            ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' 
-                            : isManual
-                            ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
-                            : 'bg-slate-800 text-slate-300 border-slate-700'
-                        }`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${badgeStyle}`}>
                           {log.action}
                         </span>
                       </td>

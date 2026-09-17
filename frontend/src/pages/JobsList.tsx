@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Layers, Search, Filter, RefreshCw, AlertTriangle, 
+import { Link, useSearchParams } from 'react-router-dom';
+import {
+  Layers, Search, Filter, RefreshCw, AlertTriangle,
   CheckCircle2, Clock, XCircle, ArrowRight, Play, RotateCcw
 } from 'lucide-react';
 import { api } from '../services/api.js';
@@ -9,8 +9,9 @@ import { getSocket } from '../services/socket.js';
 import type { JobRecord, JobStatus } from '../../../shared/types.js';
 
 export const JobsList: React.FC<{ onOpenSubmit: () => void }> = ({ onOpenSubmit }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<JobRecord[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -86,7 +87,8 @@ export const JobsList: React.FC<{ onOpenSubmit: () => void }> = ({ onOpenSubmit 
     completed: { badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', text: 'Success' },
     failed: { badge: 'bg-rose-500/10 text-rose-400 border-rose-500/20', text: 'Retrying' },
     dead: { badge: 'bg-rose-950/40 text-rose-300 border-rose-500/40', text: 'Dead-Letter' },
-    delayed: { badge: 'bg-purple-500/10 text-purple-400 border-purple-500/20', text: 'Scheduled' }
+    delayed: { badge: 'bg-purple-500/10 text-purple-400 border-purple-500/20', text: 'Scheduled' },
+    cancelled: { badge: 'bg-slate-800 text-slate-400 border-slate-700', text: 'Cancelled' }
   };
 
   return (
@@ -129,7 +131,10 @@ export const JobsList: React.FC<{ onOpenSubmit: () => void }> = ({ onOpenSubmit 
             return (
               <button
                 key={item.id}
-                onClick={() => setStatusFilter(item.id)}
+                onClick={() => {
+                  setStatusFilter(item.id);
+                  setSearchParams(item.id === 'all' ? {} : { status: item.id });
+                }}
                 className={`rounded-md px-3 py-1.5 text-xs font-mono transition-all whitespace-nowrap ${
                   isActive
                     ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30'
