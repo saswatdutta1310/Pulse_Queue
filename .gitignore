@@ -8,6 +8,14 @@ dist/
 build/
 *.tsbuildinfo
 
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+*.db
+
+
 # Environment variables
 .env
 .env.local
