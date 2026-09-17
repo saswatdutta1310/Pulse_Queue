@@ -466,9 +466,14 @@ async def redis_event_relay():
     handle to this process's Socket.IO server) out to connected dashboards."""
     import redis.asyncio as redis_asyncio
 
-    client = redis_asyncio.Redis(
-        host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True, protocol=2
-    )
+    if settings.REDIS_URL:
+        client = redis_asyncio.from_url(
+            settings.REDIS_URL, decode_responses=True, protocol=2
+        )
+    else:
+        client = redis_asyncio.Redis(
+            host=settings.REDIS_HOST, port=settings.REDIS_PORT, decode_responses=True, protocol=2
+        )
     pubsub = client.pubsub()
     await pubsub.subscribe(redis_service.EVENTS_CHANNEL)
 

@@ -1,0 +1,25 @@
+services:
+  # 1. PulseQueue Python FastAPI Backend Web Service
+  - type: web
+    name: pulsequeue-api
+    env: python
+    rootDir: backend
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: pulsequeue-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+  # 2. Redis Key-Value & Queue Store
+  - type: redis
+    name: pulsequeue-redis
+    plan: free
+    ipAllowList: [] # internal connections only

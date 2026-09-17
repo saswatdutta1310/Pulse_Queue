@@ -62,12 +62,19 @@ class RedisQueueService:
     """
 
     def __init__(self):
-        self.client = redis.Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            decode_responses=True,
-            protocol=2,  # avoids RESP3/HELLO, which older Redis builds don't support
-        )
+        if settings.REDIS_URL:
+            self.client = redis.from_url(
+                settings.REDIS_URL,
+                decode_responses=True,
+                protocol=2,
+            )
+        else:
+            self.client = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                decode_responses=True,
+                protocol=2,
+            )
 
     def ping(self) -> bool:
         try:
