@@ -56,6 +56,11 @@ class GoogleLogin(BaseModel):
     email: str
     picture: Optional[str] = None
 
+class WorkerSpawn(BaseModel):
+    hostname: Optional[str] = None
+    concurrency: Optional[int] = 1
+
+
 # ─── Auth Endpoints ──────────────────────────────────────────
 
 @fastapi_app.post("/api/auth/demo")
@@ -207,7 +212,43 @@ def create_batch_jobs(data: BatchJobCreate, db: Session = Depends(get_db)):
 def list_workers(db: Session = Depends(get_db)):
     return db.query(WorkerModel).all()
 
+@fastapi_app.post("/api/workers/spawn", status_code=201)
+@fastapi_app.post("/api/workers", status_code=201)
+def spawn_worker(data: Optional[WorkerSpawn] = None, db: Session = Depends(get_db)):
+    worker_id = f"w-{uuid.uuid4().hex[:8]}"
+    count = db.query(WorkerModel).count() + 1
+    hostname = data.hostname if (data and data.hostname) else f"worker-node-{count}"
+    
+    # Generate mock PID for the worker instance
+    import random
+    pid = random.randint(11000, 29000)
+
+    worker = WorkerModel(
+        id=worker_id,
+        pid=pid,
+        hostname=hostname,
+        status="online",
+        concurrency=data.concurrency if data else 1,
+        jobs_processed=0,
+        jobs_failed=0,
+        memory_mb=random.randint(38, 56),
+        started_at=datetime.utcnow(),
+        last_heartbeat=datetime.utcnow()
+    )
+    db.add(worker)
+    
+    # Audit trail
+    audit = AuditLogModel(
+        action="WORKER_SPAWNED",
+        details={"workerId": worker_id, "hostname": hostname, "pid": pid}
+    )
+    db.add(audit)
+    db.commit()
+
+    return {"id": worker_id, "pid": pid, "hostname": hostname, "status": "online"}
+
 @fastapi_app.post("/api/workers/{worker_id}/kill")
+
 def kill_worker(worker_id: str, db: Session = Depends(get_db)):
     worker = db.query(WorkerModel).filter(WorkerModel.id == worker_id).first()
     if not worker:
