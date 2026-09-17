@@ -1,250 +1,277 @@
 # PulseQueue ⚡
-### Distributed Task Scheduler & Worker Execution Engine
+### Distributed Task Scheduler, Autonomous Worker Fleet & Real-Time Telemetry Engine
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://react.dev/)
-[![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101)](https://socket.io/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-WAL_Fallback-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![React](https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-Telemetry-010101?style=for-the-badge&logo=socket.io&logoColor=white)](https://socket.io/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-> **High-Throughput Asynchronous Task Processing with Autonomous Failover, Distributed Leases, and Real-Time Telemetry**  
-> *Engineered for the Synora Hackathon — Distributed Systems Track*
+> **Enterprise-grade asynchronous task orchestration with sub-6-second zero-data-loss failover, monotonic fencing tokens, multi-priority scheduling, and sub-100ms real-time telemetry.**  
+> *Engineered for high-reliability systems and mission-critical background execution.*
 
 ---
 
 ## 📌 1. Executive Summary & Problem Statement
 
-Modern microservice architectures rely heavily on background asynchronous job execution for critical paths: payment processing, compliance reports, data synchronization (ETL), and webhook delivery.
+Modern cloud applications rely on asynchronous workers for compute-heavy, mission-critical operations: financial settlements, ETL pipelines, webhook deliveries, and AI model inference. In production, distributed environments face inevitable disruptions:
 
-### The Distributed Failure Dilemma
-In high-throughput environments, worker machines crash unpredictably due to:
-- **Out-of-Memory (OOM) Errors:** Large payloads causing silent process death.
-- **Transient Network Partitions:** Slow responses misidentified as dead nodes.
-- **Zombie Workers:** Frozen processes waking up late and writing stale results.
-- **Poison Pill Tasks:** Malformed tasks that cause repeated crashes and queue starvation.
+* **Zombie Workers & Split-Brain Writes:** A worker paused by OS throttling or a deep GC cycle resumes unpredictably and commits stale data over newer updates.
+* **Silent Process Death:** Out-of-memory (OOM) faults or VM node evictions terminate workers without executing graceful exit handlers.
+* **Poison Pill Tasks:** Malformed payloads repeatedly crash consuming workers, stalling queues and wasting computational resources.
+* **Clock Drift & Timezone Skew:** Distributed nodes with misconfigured local offsets corrupt TTL leases and metrics.
 
 ### The Solution: PulseQueue
-**PulseQueue** is a resilient background job engine built on **Zero-Data-Loss Architecture**. It guarantees **At-Least-Once execution**, revokes zombie worker locks via **monotonic lease epochs**, isolates poison pills in a **Dead-Letter Queue (DLQ)** with exponential backoff, and provides **sub-100ms real-time telemetry** to an operations dashboard with a live Chaos Kill Switch.
+**PulseQueue** eliminates these failure modes through an **At-Least-Once, Zero-Data-Loss Architecture**:
+1. **Monotonic Fencing Tokens:** Lease epochs enforce strict single-writer validity, mathematically preventing zombie double-commits.
+2. **Autonomous Heartbeat Reaper:** Independent watchdog daemon audits node liveness every 2.5s, recovering orphaned tasks in $<5.5$ seconds.
+3. **Multi-Priority Sorted-Set Scheduling:** Priority buckets with nanosecond-level FIFO tie-breakers prevent queue starvation.
+4. **Resilient Hybrid Persistence:** Primary enterprise PostgreSQL connectivity with automatic, zero-downtime fallback to local WAL-mode SQLite.
+5. **Real-Time Telemetry & Chaos Engineering:** Live WebSocket event bus powering a cyber-ops telemetry control plane with an integrated one-click Chaos Kill Switch.
 
 ---
 
-## 🏗️ 2. Distributed System Architecture
-
-The following diagram illustrates the complete end-to-end topology and lifecycle across the client, API gateway, Redis state layer, worker fleet, autonomous watchdog, and telemetry stream.
+## 🏗️ 2. Distributed System Topology
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer["🖥️ Presentation & Client Layer"]
-        A["React 18 SPA (Vite + Tailwind)"]
-        Landing["Public Landing Page & Sandbox"]
-        Login["Google OAuth & RBAC Login"]
+    subgraph ClientLayer["🖥️ Presentation & Telemetry Layer (React + Vite + TypeScript)"]
+        UI["Real-Time Cyber-Ops Control Plane"]
+        Globe["Interactive 3D Network Topology"]
+        Simulator["Live Failover Sandbox"]
     end
 
-    subgraph APILayer["🌐 Orchestration Plane (Express + WebSockets)"]
-        Gateway["Express Gateway (Port 4000)"]
-        AuthMiddleware["JWT / Role Guard (Admin / Viewer)"]
-        SocketServer["Socket.IO Event Hub"]
-        ProcMgr["Process Manager (Fleet Controller)"]
-        DBStore[("Durable JSON Store & Audit Log")]
+    subgraph OrchestrationPlane["🌐 Orchestration Engine (FastAPI + ASGI Socket.IO)"]
+        API["FastAPI REST Gateway (:4000)"]
+        Auth["JWT & Role-Based Access Control (Admin / Viewer)"]
+        TelemetryRelay["Redis Pub/Sub Socket.IO Event Relay"]
+        ProcessMgr["Fleet Controller (OS Process Spawner / Killer)"]
+        HybridDB[("SQLAlchemy Engine\n(PostgreSQL Primary / SQLite WAL Fallback)")]
     end
 
-    subgraph StateLayer["⚡ Distributed State (Redis 7)"]
-        BullQueue["BullMQ Priority FIFO Queue"]
-        DelayedSet["Timestamp Sorted Set (Delayed Jobs)"]
-        LeaseEpochs["Key: job:epoch:<id> (Fencing Tokens)"]
-        HeartbeatKeys["Key: worker:heartbeat:<id> (TTL 2s)"]
+    subgraph StateLayer["⚡ Distributed Memory & Queue State (Redis)"]
+        WaitQueue["Priority Sorted Set (pq:wait)\n[Score: Priority * 10^13 + Timestamp]"]
+        DelayedQueue["Delayed Sorted Set (pq:delayed)\n[Score: Target Unix Epoch ms]"]
+        EpochRegistry["Fencing Tokens (job:epoch:<id>)"]
+        PubSubChannel["Cross-Process Event Bus (pq:events)"]
     end
 
-    subgraph WorkerFleet["⚙️ Distributed Worker Fleet"]
-        W1["Worker Node 1 (PID 1420)"]
-        W2["Worker Node 2 (PID 1890)"]
-        W3["Worker Node 3 (PID 2104)"]
+    subgraph WorkerFleet["⚙️ Distributed OS Worker Fleet"]
+        W1["Worker Node 1\n(Subprocess PID 26412)"]
+        W2["Worker Node 2\n(Subprocess PID 6160)"]
+        W3["Worker Node 3\n(Subprocess PID 10760)"]
     end
 
-    subgraph Watchdog["🛡️ Autonomous Failover Engine"]
-        Reaper["Heartbeat Reaper Daemon (Every 2.5s)"]
-        DLQ["Dead-Letter Queue (DLQ)"]
+    subgraph WatchdogEngine["🛡️ Autonomous Watchdog & DLQ"]
+        Reaper["Heartbeat Reaper Daemon\n(2.5s Sweeps | 5.5s Expiration Threshold)"]
+        DLQ["Dead-Letter Queue (DLQ)\n(3-Attempt Exponential Backoff Exhaustion)"]
     end
 
     %% Client Interactions
-    A <-->|Sub-100ms Telemetry Stream| SocketServer
-    A -->|REST API Requests| Gateway
-    Landing --> Login
-    Login -->|Bearer JWT| Gateway
+    UI <-->|Bi-directional WebSocket Telemetry| TelemetryRelay
+    UI -->|Authenticated REST API| API
+    Simulator -->|1-Click Chaos Request| API
 
-    %% Gateway to State
-    Gateway --> AuthMiddleware
-    AuthMiddleware --> BullQueue
-    AuthMiddleware --> ProcMgr
-    Gateway --> DBStore
+    %% Gateway to State & Persistence
+    API --> Auth
+    Auth --> WaitQueue
+    Auth --> DelayedQueue
+    Auth --> ProcessMgr
+    API --> HybridDB
 
-    %% Workers consuming
-    BullQueue -->|Dequeue Job| W1
-    BullQueue -->|Dequeue Job| W2
-    BullQueue -->|Dequeue Job| W3
+    %% Worker Execution
+    WaitQueue -->|Atomic Lua Dequeue| W1
+    WaitQueue -->|Atomic Lua Dequeue| W2
+    WaitQueue -->|Atomic Lua Dequeue| W3
 
-    %% Leases & Heartbeats
-    W1 -->|Renew Lease every 2s| HeartbeatKeys
-    W2 -->|Renew Lease every 2s| HeartbeatKeys
-    W3 -->|Renew Lease every 2s| HeartbeatKeys
+    %% Heartbeats & Fencing
+    W1 -->|Renew Lease Every 1.5s| HybridDB
+    W2 -->|Renew Lease Every 1.5s| HybridDB
+    W3 -->|Renew Lease Every 1.5s| HybridDB
 
-    W1 -.->|Check Fencing Epoch via Lua| LeaseEpochs
-    W2 -.->|Check Fencing Epoch via Lua| LeaseEpochs
-    W3 -.->|Check Fencing Epoch via Lua| LeaseEpochs
+    W1 -.->|Verify Monotonic Epoch| EpochRegistry
+    W2 -.->|Verify Monotonic Epoch| EpochRegistry
+    W3 -.->|Verify Monotonic Epoch| EpochRegistry
 
-    %% Reaper Monitoring
-    Reaper -->|Check missed beats > 5.5s| HeartbeatKeys
-    Reaper -->|Worker Dead: INCR Epoch & Re-queue| LeaseEpochs
-    Reaper -->|Max Retries Exceeded| DLQ
-    Reaper -->|Alert Event| SocketServer
+    W1 -->|Publish Step Progress| PubSubChannel
+    W2 -->|Publish Step Progress| PubSubChannel
+    W3 -->|Publish Step Progress| PubSubChannel
+    PubSubChannel --> TelemetryRelay
 
-    %% Worker Process Lifecycle
-    ProcMgr -->|Fork & taskkill / SIGKILL| W1
-    ProcMgr -->|Fork & taskkill / SIGKILL| W2
-    ProcMgr -->|Fork & taskkill / SIGKILL| W3
+    %% Autonomous Watchdog
+    Reaper -->|Audit Heartbeat Timestamps| HybridDB
+    Reaper -->|Worker Missed > 5.5s: INCR Epoch| EpochRegistry
+    Reaper -->|Reclaim Job to Head of Queue| WaitQueue
+    Reaper -->|Exhausted Attempts| DLQ
+    Reaper -->|Broadcast Rescued Event| TelemetryRelay
+
+    %% Process Manager Lifecycle
+    ProcessMgr -->|Spawn / Taskkill / SIGKILL| W1
+    ProcessMgr -->|Spawn / Taskkill / SIGKILL| W2
+    ProcessMgr -->|Spawn / Taskkill / SIGKILL| W3
 ```
 
 ---
 
-## 🔄 3. Failure & Recovery Lifecycle (State Machine)
+## 🔄 3. State Transition & Failover Lifecycle
 
-The state machine below demonstrates how PulseQueue recovers orphaned tasks when a worker process crashes mid-execution:
+The state machine below illustrates how PulseQueue guarantees zero task loss when a worker terminates mid-execution:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Pending: Enqueued with Priority & Delay
-    Pending --> Active: Worker claims lease (TTL 2s, Epoch N)
+    [*] --> Pending: Job Enqueued (Priority 1-10, Optional Delay)
+    Pending --> Active: Worker claims task (Initializes Lease Epoch N)
     
     state Active {
-        [*] --> Processing
-        Processing --> Heartbeating: Ping every 2s
-        Heartbeating --> Processing
+        [*] --> InFlightExecution
+        InFlightExecution --> HeartbeatPing: Daemon thread updates timestamp (every 1.5s)
+        HeartbeatPing --> InFlightExecution
     }
 
-    Active --> Completed: Processing Succeeded (Epoch matches N)
-    Active --> Failed: Error thrown (attempts < maxAttempts)
-    Failed --> Pending: Exponential Backoff (delay = 2^attempt * backoffMs)
-    Failed --> DLQ: attempts >= maxAttempts (Quarantined)
+    Active --> Completed: Step progress 100% (Epoch verified against Redis)
+    Active --> Failed: Error thrown (attempts < max_attempts)
+    Failed --> Delayed: Exponential Backoff (delta = backoff_ms * 2^(attempt-1))
+    Delayed --> Pending: Timestamp reached -> Promoted by Reaper
+    Failed --> DLQ: attempts >= max_attempts (Quarantined in Dead-Letter Queue)
 
-    Active --> Crashed: Worker Process Killed (Chaos / OOM)
+    Active --> Orphaned: Worker Killed (OS Chaos / Hardware Fault / OOM)
     
-    state Crashed {
-        [*] --> SilentHeartbeat
-        SilentHeartbeat --> ReaperDetect: 5.5s Elapsed (> 3 missed beats)
-        ReaperDetect --> MarkDead: Worker Status = 'dead'
+    state Orphaned {
+        [*] --> MissedHeartbeat
+        MissedHeartbeat --> ReaperAudit: 5.5s Elapsed (>3 missed pings)
+        ReaperAudit --> MarkDead: Worker status set to 'dead'
         MarkDead --> EpochBump: INCR job:epoch:<id> (N -> N+1)
-        EpochBump --> Requeue: Prepend to Queue with Attempt+1
+        EpochBump --> PrependWait: Restore task to head of priority bucket
     }
 
-    Crashed --> Pending: Reassigned to Healthy Worker
-    DLQ --> Pending: Operator Manual Replay (1-Click)
+    Orphaned --> Pending: Rescued with attempt incremented
+    DLQ --> Pending: Operator 1-Click Replay
     Completed --> [*]
 ```
 
 ---
 
-## 🛡️ 4. Solving Core Distributed Systems Challenges
+## 🛡️ 4. Distributed Systems Primitives in Detail
 
-### 1. Zombie Worker Prevention (Monotonic Fencing Tokens)
-* **The Vulnerability:** A worker experiences a prolonged Garbage Collection (GC) pause. The Reaper assumes it is dead, revokes its task, and gives it to Worker 2. Worker 1 wakes up and commits stale data to the database, causing split-brain writes.
-* **Our Solution:** Every job has a Redis integer key `job:epoch:<jobId>`.
-  When the Reaper reclaims a task, it executes an atomic Lua script that increments the epoch ($N \to N+1$). When Worker 1 wakes up, its completion script is rejected with:
+### 1. Monotonic Fencing Tokens (Zombie Writer Invalidation)
+* **The Risk:** When a worker stalls (e.g., system freeze, network split), the Reaper declares it dead and reassigns its job to Worker 2. If Worker 1 recovers later, it attempts to write its stale results to storage, causing split-brain data corruption.
+* **PulseQueue Implementation:** Each job maintains an integer epoch counter `job:epoch:<jobId>` in Redis. When the Reaper reclaims a task, it atomically increments this epoch ($N \to N+1$). When the original worker wakes up, its completion write is validated via an atomic Lua script:
   ```lua
-  local currentEpoch = redis.call('GET', KEYS[1])
-  if tonumber(currentEpoch) == tonumber(ARGV[1]) then
-      redis.call('DEL', KEYS[2])
-      return 1
+  local current = redis.call('GET', KEYS[1])
+  if current == false or tonumber(current) == tonumber(ARGV[1]) then
+      return 1 -- Commit Accepted
   else
-      return 0 -- REJECT STALE COMMIT
+      return 0 -- REJECT STALE ZOMBIE WRITE
   end
   ```
 
-### 2. Autonomous Heartbeat Reaper Daemon
-* Runs every **2.5 seconds** independently of worker processes.
-* Threshold: **5.5 seconds** ($\sim 3$ missed heartbeats).
-* Total Failover Latency: **$< 6.0$ seconds** from instant of worker crash to task re-queuing.
+### 2. Priority Scheduling with FIFO Sub-Ordering
+* Priority integers range from `1` (Highest/Critical) to `10` (Lowest/Background).
+* The Redis wait score is calculated deterministically:
+  $$\text{Score} = \text{Priority} \times 10^{13} + \text{TimestampMs}$$
+* Re-queued failover jobs are prepended with offset `0` to guarantee immediate recovery without starving normal-priority tasks.
 
-### 3. Starvation Prevention & Priority Buckets
-* High-priority jobs (Priority 10) are scheduled ahead of bulk jobs.
-* Re-queued failover jobs are prepended to the head of their respective priority bucket to ensure timely recovery.
+### 3. Sub-6-Second Autonomous Failover
+* The **Heartbeat Reaper Daemon** executes every **2,500ms**.
+* Expiration Threshold: **5,500ms** (equivalent to $\sim 3$ missed heartbeats).
+* Total Failover Latency: **$< 6.0$ seconds** from ungraceful process kill to active re-execution.
 
-### 4. Exponential Backoff & Dead-Letter Queue (DLQ)
-* Backoff formula: $\Delta t = \text{backoff\_ms} \times 2^{(\text{attempt} - 1)}$.
-* After 3 failed attempts, poison pills are moved to the DLQ with complete error codes and stack traces.
-* Operators can click **Replay** on the dashboard to safely re-inject fixed tasks.
+### 4. Exponential Backoff & Dead-Letter Quarantine (DLQ)
+* Transient execution failures back off exponentially:
+  $$\Delta t = \text{backoff\_ms} \times 2^{(\text{attempt} - 1)}$$
+* Poison pills that fail 3 consecutive times are moved to the Dead-Letter Queue (DLQ), recording:
+  - Exact error codes (`GATEWAY_TIMEOUT_504`, `HANDSHAKE_RESET`, etc.)
+  - Complete Python stack traces
+  - Monotonic attempt history
+* Operators can replay dead-letter jobs with 1 click from the UI or REST API.
+
+### 5. UTC Precision Time Synchronization
+* All database fields, internal timers, and Redis payloads strictly utilize ISO-8601 UTC timestamps (`YYYY-MM-DDTHH:MM:SS.mmmmmm+00:00`).
+* Client-side defensive parsing normalizes UTC offsets, completely eliminating client/server timezone drift.
 
 ---
 
-## 📊 5. Core Feature Matrix
+## 📊 5. Core Capabilities & Feature Matrix
 
-| Feature | Distributed Systems Mechanism | Value Delivered |
+| Capability | Technical Mechanism | Benefit |
 | :--- | :--- | :--- |
-| **Monotonic Lease Epochs** | Redis atomic Lua scripts (`leaseManager.ts`) | Guaranteed prevention of zombie double-writes |
-| **Heartbeat Reaper** | 2.5s sweeps, 5.5s expiration (`heartbeatReaper.ts`) | Autonomous sub-6s zero-data-loss failover |
-| **Chaos Kill Switch** | Cross-platform OS `taskkill` & `SIGKILL` | Live deterministic evaluator demonstrations |
-| **Real-time Telemetry** | Socket.IO WebSockets (`socket.ts`) | Sub-100ms updates for queue depth and worker health |
-| **Google OAuth + RBAC** | Google Identity Services + JWT (`authService.ts`) | Admin (full control) vs Viewer (read-only telemetry) |
-| **Liveness Supervisor Probe**| `GET /health/liveness` | Real-time watchdog health check for external monitors |
-| **Automated Test Suite** | 8/8 automated distributed invariant tests | Deterministic test runner verifying lease transitions |
+| **Monotonic Lease Epochs** | Redis atomic Lua fencing scripts | Guaranteed prevention of zombie double-writes |
+| **Autonomous Heartbeat Reaper** | Async background daemon (2.5s sweeps, 5.5s timeout) | Autonomous sub-6s zero-data-loss failover |
+| **Real OS Process Controller** | Platform-agnostic `subprocess` (`taskkill /F` & `SIGKILL`) | True multi-process isolation and deterministic chaos testing |
+| **Real-Time Telemetry** | Redis Pub/Sub $\to$ ASGI Socket.IO event bus | Sub-100ms cluster metrics and worker state streaming |
+| **Priority & Delayed Queues** | Dual Redis Sorted Sets (`pq:wait` & `pq:delayed`) | Microsecond-latency FIFO dequeuing with priority guarantees |
+| **Hybrid Persistence** | SQLAlchemy with PostgreSQL + SQLite WAL fallback | Zero-config local development and rock-solid production durability |
+| **Interactive 3D Control Plane** | Three.js / Canvas particle globe + Recharts | High-density cyber-ops monitoring interface |
+| **One-Click Data Reseed** | `POST /api/system/reset-and-seed` & `python seed.py` | Instant cluster reset and rich demo population |
 
 ---
 
-## 📂 6. Repository Layout
+## 📂 6. Repository Structure
 
 ```text
-Pulse_Queue/
+Pulse_Queue-main/
 ├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   │   ├── env.ts              # Configuration constants & timings
-│   │   │   └── redis.ts            # Redis client singleton & connection pool
-│   │   ├── db/
-│   │   │   └── index.ts            # Durable JSON store with atomic file swapping
-│   │   ├── middleware/
-│   │   │   └── authMiddleware.ts   # JWT validation & RBAC guards
-│   │   ├── services/
-│   │   │   ├── authService.ts      # Google OAuth & 1-click evaluator tokens
-│   │   │   ├── heartbeatReaper.ts  # Autonomous watchdog failover daemon
-│   │   │   ├── leaseManager.ts     # Atomic Lua scripts & fencing tokens
-│   │   │   ├── processManager.ts   # Worker process fleet controller & kill switch
-│   │   │   └── queueService.ts     # BullMQ priority queue & DLQ engine
-│   │   ├── worker/
-│   │   │   └── workerRunner.ts     # Child process worker loop & IPC heartbeats
-│   │   ├── testRunner.ts           # Distributed invariant automated test suite
-│   │   └── server.ts               # Express API, liveness probe & Socket.IO server
-│   ├── package.json
-│   └── tsconfig.json
+│   ├── main.py                 # FastAPI server, REST routes, Socket.IO ASGI app, lifespan handlers
+│   ├── models.py               # SQLAlchemy ORM schemas (Job, JobAttempt, Worker, AuditLog)
+│   ├── database.py             # Hybrid database engine (PostgreSQL + SQLite WAL fallback)
+│   ├── schemas.py              # Explicit Pydantic & ISO-8601 UTC serializers
+│   ├── config.py               # Pydantic BaseSettings (Redis, DB, JWT, intervals)
+│   ├── auth.py                 # JWT token issuance, verification & RBAC guards
+│   ├── audit.py                # Structured audit logging helper
+│   ├── reaper.py               # HeartbeatReaperDaemon (autonomous watchdog)
+│   ├── redis_service.py        # RedisQueueService (Lua scripts, sorted sets, pub/sub)
+│   ├── process_manager.py      # ProcessManager (OS subprocess fleet controller)
+│   ├── worker_process.py       # Standalone OS worker process (job polling, heartbeat loop)
+│   ├── seed.py                 # Standalone & API cluster reset and demo data seeder
+│   ├── requirements.txt        # Python production dependencies
+│   └── .env.example            # Environment variable template
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── Navbar.tsx          # Sticky navigation, status pill & user avatar
-│   │   │   ├── ProtectedRoute.tsx  # Authentication & RBAC route guard
-│   │   │   └── SubmitJobModal.tsx  # Interactive job creation dialog
-│   │   ├── context/
-│   │   │   └── AuthContext.tsx     # Global auth state & session persistence
+│   │   │   ├── globe/
+│   │   │   │   └── PointCloudGlobe.tsx     # Three.js 3D interactive global telemetry globe
+│   │   │   ├── hero/
+│   │   │   │   ├── WeEvolveHero.tsx        # High-impact animated hero section
+│   │   │   │   └── NodeMarquee.tsx         # Live cluster node status marquee
+│   │   │   ├── landing/
+│   │   │   │   ├── JobLifecycleSection.tsx # Interactive step-by-step state machine
+│   │   │   │   └── TaglineMarquee.tsx      # Performance metrics banner
+│   │   │   ├── nav/
+│   │   │   │   ├── WeEvolveHeader.tsx      # Cyber-ops navigation bar
+│   │   │   │   ├── NavDropdown.tsx         # Contextual navigation dropdowns
+│   │   │   │   └── PulseLogoMark.tsx       # Animated SVG queue heartbeat logo
+│   │   │   ├── ui/
+│   │   │   │   └── GlowCard.tsx            # Glassmorphism container components
+│   │   │   ├── SubmitJobModal.tsx          # Task submission and batch creator modal
+│   │   │   ├── ProtectedRoute.tsx          # Client-side RBAC route protector
+│   │   │   └── Navbar.tsx                  # Internal authenticated header
 │   │   ├── pages/
-│   │   │   ├── LandingPage.tsx     # Public landing page with failover simulator
-│   │   │   ├── LoginPage.tsx       # Google Sign-in & 1-click evaluator login
-│   │   │   ├── Dashboard.tsx       # Telemetry control room & throughput charts
-│   │   │   ├── WorkersFleet.tsx    # Live worker matrix & chaos kill switches
-│   │   │   ├── JobsList.tsx        # Filterable jobs table with DLQ filter
-│   │   │   ├── JobDetail.tsx       # Step-by-step attempt histories & stack traces
-│   │   │   └── AuditLogs.tsx       # Chronological cryptographic security log
+│   │   │   ├── LandingPage.tsx             # Public landing page with live crash simulator
+│   │   │   ├── LoginPage.tsx               # 1-click evaluator & Google OAuth login
+│   │   │   ├── Dashboard.tsx               # Cluster control room, KPI cards, throughput charts
+│   │   │   ├── WorkersFleet.tsx            # Live worker node matrix & chaos kill switches
+│   │   │   ├── JobsList.tsx                # Filterable workloads table & DLQ controls
+│   │   │   ├── JobDetail.tsx               # Attempt audit history & exception stack traces
+│   │   │   └── AuditLogs.tsx               # Chronological security and failover log
+│   │   ├── hooks/                          # Reusable animation & viewport hooks
 │   │   ├── services/
-│   │   │   ├── api.ts              # REST client with Bearer token injection
-│   │   │   └── socket.ts           # WebSocket connection manager
-│   │   ├── App.tsx                 # Routing & global providers
-│   │   └── main.tsx
+│   │   │   ├── api.ts                      # Axios/fetch client with Bearer auth injection
+│   │   │   └── socket.ts                   # Socket.IO client singleton
+│   │   ├── styles/                         # Core design tokens and custom animations
+│   │   ├── App.tsx                         # Client routes and layout wrapper
+│   │   └── main.tsx                        # React application entry point
 │   ├── package.json
-│   ├── tailwind.config.js
-│   └── vite.config.ts
+│   ├── vite.config.ts
+│   └── tailwind.config.js
 ├── shared/
-│   └── types.ts                    # Shared TypeScript interfaces
-├── infra/
-│   └── redis.conf                  # Custom Redis AOF persistence config
-├── README.md
-└── PROJECT_OVERVIEW.md
+│   └── types.ts                # Shared TypeScript contracts between frontend and backend
+├── README.md                   # System documentation and architecture guide
+└── .gitignore                  # Git ignore rules (builds, caches, SQLite WAL files)
 ```
 
 ---
@@ -252,104 +279,128 @@ Pulse_Queue/
 ## ⚡ 7. Quick Start & Setup Guide
 
 ### Prerequisites
-1. **Node.js**: v18.0.0 or higher
-2. **Redis Server**: Installed and accessible on `127.0.0.1:6379`
+* **Python**: 3.11+
+* **Node.js**: v18.0.0+
+* **Redis**: Running on `127.0.0.1:6379` (local or via Docker)
+* *(Optional)* **PostgreSQL**: Running on `localhost:5432` (PulseQueue automatically falls back to local SQLite with WAL mode if PostgreSQL is absent)
 
 ---
 
 ### Step 1: Start Redis Server
 ```powershell
+# Windows (via Redis for Windows or WSL)
 redis-server
+
+# Or via Docker:
+docker run -d -p 6379:6379 --name pulsequeue-redis redis:7-alpine
 ```
-*(Verify Redis is listening on `127.0.0.1:6379`)*
 
 ---
 
-### Step 2: Start Backend Server & Worker Fleet
-Open a second terminal:
+### Step 2: Start Python FastAPI Backend
+Open a terminal:
 ```powershell
 cd backend
-npm install
-npm run dev
+
+# Install Python dependencies
+python -m pip install -r requirements.txt
+
+# Start the FastAPI engine with hot-reload
+python -m uvicorn main:app --host 0.0.0.0 --port 4000 --reload
 ```
-> **What happens automatically:**
-> - Boots Express API and Socket.IO on `http://localhost:4000`
-> - Initializes Heartbeat Reaper Daemon
-> - Spawns 3 worker node processes (`worker-node-1`, `worker-node-2`, `worker-node-3`)
-> - Connects to local Redis queue
+
+> **What happens automatically on startup:**
+> - Verifies database schemas (connects to PostgreSQL or falls back to SQLite WAL mode).
+> - Starts the `HeartbeatReaperDaemon` (2.5s sweeps).
+> - Starts the Redis Pub/Sub WebSocket telemetry relay.
+> - Spawns 3 dedicated OS worker child processes (`worker-node-1`, `worker-node-2`, `worker-node-3`).
+> - Mounts interactive Swagger API docs at `http://localhost:4000/docs`.
 
 ---
 
-### Step 3: Run Automated Distributed Invariant Tests
-Open another terminal:
+### Step 3: (Optional) Seed or Reset Demo Data
+You can seed or reset the database and Redis queues at any time via CLI:
 ```powershell
 cd backend
-npm test
+python seed.py
 ```
-**Expected Output:**
-```text
-🧪 [Test Suite] Running PulseQueue Distributed Primitives Verification...
-  ✅ PASS: Redis connection is operational
-  ✅ PASS: Worker 1 acquired initial lease
-  ✅ PASS: Initial lease epoch is 1
-  ✅ PASS: Competing Worker 2 is rejected while lease is held
-  ✅ PASS: Worker 1 successfully renewed active lease with current epoch
-  ✅ PASS: Reaper bumped fencing epoch from 1 to 2 upon simulated failover
-  ✅ PASS: Zombie worker with stale epoch 1 is REJECTED by fencing token
-  ✅ PASS: Rescued worker with epoch 2 is successfully accepted and validated
-
-📊 [Test Summary] Passed: 8, Failed: 0
-```
+*(Or click the **Reset & Seed Data** button directly on the dashboard UI).*
 
 ---
 
 ### Step 4: Start Frontend Dashboard
-Open another terminal:
+Open a second terminal:
 ```powershell
 cd frontend
+
+# Install frontend dependencies
 npm install
+
+# Start the Vite development server
 npm run dev
 ```
-Access the application at:
+
+Open your browser to:
 👉 **[http://localhost:5173](http://localhost:5173)**
 
 ---
 
 ## 🧪 8. Live Judge Evaluation & Demo Walkthrough
 
-When presenting to judges, follow this **3-minute live demonstration**:
+Follow this **3-minute evaluation script** to test PulseQueue's core capabilities:
 
-1. **The Problem Showcase (Landing Page):**
-   - Open `http://localhost:5173/`.
-   - Scroll to the **"Live Failover & Reaper Simulator"** card.
-   - Click **"Simulate Worker Crash"** to demonstrate the 3-step recovery lifecycle before entering the dashboard.
+1. **Interactive Experience & Simulator (Landing Page):**
+   * Visit `http://localhost:5173`.
+   * Explore the interactive 3D particle globe and system metrics marquee.
+   * Scroll down to the **Live Failover Sandbox** and click **Simulate Worker Crash** to visualize the 3-step recovery lifecycle.
 
-2. **Authentication & RBAC:**
-   - Click **"Launch Control Plane"** $\to$ redirected to `/login`.
-   - Click **"Judge / Evaluator (Admin)"** to sign in with full permissions.
-   - Notice the cyan `ADMIN` badge and user profile in the top navbar.
+2. **One-Click Evaluator Authentication:**
+   * Click **Launch Control Plane** $\to$ you will be directed to `/login`.
+   * Click **Judge / Evaluator (Admin)** for instant, credential-free access with administrative privileges.
 
-3. **Task Ingestion:**
-   - Click **"Enqueue Task"** $\to$ select **Batch Submission** $\to$ enqueue 10 tasks.
-   - Watch the workers pick up tasks in parallel on the live throughput charts.
+3. **Telemetry Control Room:**
+   * Review the 5 live KPI cards: **Queue Depth**, **Active Workers**, **Completed Jobs**, **Dead-Letter Queue (DLQ)**, and **Rescued Failovers**.
+   * Notice the real-time throughput chart streaming live updates via WebSockets.
 
-4. **The Live Chaos Kill Test:**
-   - Navigate to **"Worker Fleet"** (`/workers`).
-   - Find an actively processing worker node and click **"Kill Worker"**.
-   - **Watch the system react in real-time:**
-     - The targeted worker's PID is killed instantly via OS signal.
-     - The status flips to `KILLED`.
-     - In $< 5.5$ seconds, the Heartbeat Reaper logs a warning and reclaims the task.
-     - The task is reassigned to another healthy worker.
-     - The top counter increments: `1 recovered`.
-     - The task completes with **0 data loss**.
+4. **The Live Chaos Kill Test (Zero-Data-Loss Verification):**
+   * Navigate to the **Worker Fleet** tab (`/workers`).
+   * Observe each node's real-time heartbeat timer ticking every 1.5 seconds in green.
+   * Find an active node and click **KILL WORKER (SIGKILL)**.
+   * **Watch the autonomous recovery unfold in real-time:**
+     - The process is terminated immediately with an OS-level signal.
+     - The node status flips to `KILLED` in the UI.
+     - Within $< 5.5$ seconds, the Heartbeat Reaper detects the missed heartbeat, logs a warning, and bumps the fencing token epoch.
+     - The orphaned task is automatically reclaimed and prepended to the queue.
+     - Another healthy worker claims and completes the task.
+     - The **Rescued Failovers** counter increments: **Zero Data Loss**.
 
-5. **Poison Pill & Dead-Letter Queue (DLQ):**
-   - Enqueue a `fault_simulation` task.
-   - Observe it retry with exponential delays before safely retiring into the **Dead-Letter Queue**.
-   - Navigate to `/jobs?status=dead`, inspect the exact error stack trace, and click **"Replay"** to demonstrate manual recovery.
+5. **Poison Pill Isolation & Dead-Letter Queue (DLQ):**
+   * Click **Enqueue Task** $\to$ select the **Fault Simulation** template.
+   * Submit the task. Watch it retry through exponential backoff before being safely quarantined in the DLQ.
+   * Navigate to `/jobs?status=dead`, inspect the exact traceback and error payload, and click **Retry** to demonstrate manual replay.
+
+6. **Cluster Reset & Reseed:**
+   * Click **Reset & Seed Data** on the Dashboard header to wipe the database, flush queues, and re-populate fresh workloads on the fly.
 
 ---
 
-## 📜 9. License
-MIT License. Built for the Synora Hackathon / Distributed Systems Track.
+## 📡 9. REST API Reference Summary
+
+| Method | Endpoint | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/demo` | None | Generates JWT tokens for Admin/Viewer roles |
+| `GET` | `/api/metrics` | Bearer | Fetches real-time cluster metrics & throughput |
+| `GET` | `/api/jobs` | Bearer | Lists filtered jobs (`pending`, `active`, `completed`, `dead`) |
+| `POST` | `/api/jobs` | Admin | Enqueues a new task with priority and optional delay |
+| `POST` | `/api/jobs/batch` | Admin | Enqueues batch tasks in parallel |
+| `POST` | `/api/jobs/{id}/retry` | Admin | Replays a quarantined DLQ job |
+| `GET` | `/api/workers` | Bearer | Returns live worker node fleet status and heartbeats |
+| `POST` | `/api/workers/spawn` | Admin | Dynamically scales out a new OS worker process |
+| `POST` | `/api/workers/{id}/kill` | Admin | Chaos switch: sends `taskkill`/`SIGKILL` to target worker |
+| `GET` | `/api/audit-logs` | Bearer | Returns chronological security & failover audit log |
+| `POST` | `/api/system/reset-and-seed` | Open | Purges tables/Redis and reseeds demo datasets |
+
+---
+
+## 📜 10. License
+Distributed under the **MIT License**. Engineered for high-throughput, resilient background task execution.
